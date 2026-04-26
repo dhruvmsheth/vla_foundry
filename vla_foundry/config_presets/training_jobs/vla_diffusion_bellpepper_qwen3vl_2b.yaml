@@ -1,18 +1,28 @@
 model:
-  <<: !include ../models/vla_diffusion_paligemma2.yaml
+  type: diffusion_policy
+  num_action_head_repeats: 8
+  input_noise_std: 0.05
+  diffusion_step_conditioning: add
   vision_language_backbone:
     type: vlm_backbone
     hf_pretrained: Qwen/Qwen3-VL-2B-Thinking
-    num_vlm_layers_to_use: 4
+    num_vlm_layers_to_use: 1
+  transformer:
+    <<: !include ../models/transformer_410m.yaml
+    is_causal: true
+  noise_scheduler:
+    num_timesteps: 1000
+    beta_start: 0.0001
+    beta_end: 0.02
+    clamp_range: [-1.5, 1.5]
+  use_flow_matching_scheduler: true
 
 data:
   <<: !include ../data/lbm/lbm_data_params.yaml
   <<: !include ../data/vla_diffusion.yaml
   processor: Qwen/Qwen3-VL-2B-Thinking
   processor_kwargs:
-    size:
-      shortest_edge: 224
-      longest_edge: 224
+    do_resize: false
   dataset_manifest:
     - s3://your-bucket/your-path/vla_foundry_datasets/stage3_singletask_sim/BimanualPutRedBellPepperInBin/shards/manifest.jsonl
   dataset_statistics:
@@ -24,18 +34,55 @@ data:
   camera_names:
     - scene_right_0
     - scene_left_0
-    - wrist_left_minus
     - wrist_left_plus
     - wrist_right_minus
-    - wrist_right_plus
   image_indices:
     - -1
     - 0
+  lowdim_future_timesteps: 8
+  num_workers: 24
+  prefetch_factor: 2
+  proprioception_fields: []
+  action_fields:
+    - robot__action__poses__left::panda__xyz_relative
+    - robot__action__poses__right::panda__xyz_relative
+    - robot__action__poses__left::panda__rot_6d_relative
+    - robot__action__poses__right::panda__rot_6d_relative
+    - robot__action__grippers__left::panda_hand
+    - robot__action__grippers__right::panda_hand
+  normalization:
+    enabled: true
+    method: percentile_1_99
+    scope: per_timestep
+    epsilon: 1e-2
+    centered_norm: true
+    include_fields:
+      - robot__action__poses__left::panda__xyz_relative
+      - robot__action__poses__right::panda__xyz_relative
+      - robot__action__poses__left::panda__rot_6d_relative
+      - robot__action__poses__right::panda__rot_6d_relative
+      - robot__action__grippers__left::panda_hand
+      - robot__action__grippers__right::panda_hand
+  augmentation:
+    enabled: true
+    image:
+      color_jitter:
+        enabled: true
+        brightness: 0.2
+        contrast: 0.4
+        saturation: 0.2
+        hue: [-0.05, 0.05]
+      crop:
+        enabled: true
+        shape: [224, 224]
+        mode: random
 
 distributed:
   fsdp: True
 
 hparams:
   <<: !include ../hparams/diffusion_policy.yaml
+  lr: 5e-5
+  wd: 1e-8
   per_gpu_batch_size: 1
   global_batch_size: 2

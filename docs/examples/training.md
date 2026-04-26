@@ -164,8 +164,8 @@ the `BimanualPutRedBellPepperInBin` robotics task.
 
 ## VLA DiffusionPolicy (Qwen3-VL-2B-Thinking Backbone)
 
-Same VLA recipe, but with a Qwen3-VL-2B-Thinking backbone and Qwen-compatible
-image processor kwargs in the preset:
+Same VLA recipe, but with the Qwen3-VL-2B-Thinking backbone and action head
+architecture used by the released Foundry-Qwen3VLA-2B checkpoint:
 
 **Source:** `examples/training/vla_diffusion_redbellpepper_qwen_2b_thinking.sh`
 
@@ -179,9 +179,9 @@ uv run torchrun --nproc_per_node=1 --nnodes=1 vla_foundry/main.py \
     "$@"
 ```
 
-The Qwen processor expects `processor_kwargs.size.shortest_edge` and
-`processor_kwargs.size.longest_edge`; this preset sets those directly instead of
-inheriting the PaliGemma height/width image size fields.
+The preset mirrors the released checkpoint architecture: one Qwen hidden-state
+layer for conditioning, a 410M diffusion transformer head, four LBM cameras, no
+proprioception input, and `processor_kwargs.do_resize: false`.
 
 ---
 
