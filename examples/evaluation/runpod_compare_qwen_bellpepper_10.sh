@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Compare out-of-the-box Qwen3VLA against the BellPepper SFT checkpoint on the
-# same LBM Eval scenarios. Run this inside the RunPod lbm_eval image.
+# Compare out-of-the-box Qwen3VLA against an SFT checkpoint on the same LBM Eval
+# scenarios. Run this inside the RunPod lbm_eval image.
 
 PROJECT_ROOT="${PROJECT_ROOT:-/workspace/vla_recap}"
 VLA_ROOT="${VLA_ROOT:-${PROJECT_ROOT}/src/vla_foundry}"
@@ -16,6 +16,8 @@ TIMEOUT_SECONDS="${TIMEOUT_SECONDS:-14400}"
 
 OOTB_REPO="${OOTB_REPO:-TRI-ML/Foundry-Qwen3VLA-2B}"
 SFT_REPO="${SFT_REPO:-dhruvmsheth/vla-foundry-qwen-bellpepper-ft-4k-v2}"
+RUN_LABEL="${RUN_LABEL:-compare_qwen_${TASK_NAME}_10}"
+export PROJECT_ROOT RUN_LABEL
 
 if [[ ! -x "${EVAL_HELPER}" ]]; then
   echo "ERROR: eval helper not found or not executable: ${EVAL_HELPER}" >&2
@@ -25,7 +27,7 @@ fi
 run_eval() {
   local label="$1"
   local repo="$2"
-  local save_dir="${PROJECT_ROOT}/outputs/compare_qwen_bellpepper_10/${label}"
+  local save_dir="${PROJECT_ROOT}/outputs/${RUN_LABEL}/${label}"
 
   echo "============================================================"
   echo "Running ${label}: ${repo}"
@@ -52,7 +54,11 @@ python3 - <<'PY'
 from pathlib import Path
 import json
 
-root = Path("/workspace/vla_recap/outputs/compare_qwen_bellpepper_10")
+import os
+
+root = Path(os.environ.get("PROJECT_ROOT", "/workspace/vla_recap")) / "outputs" / os.environ.get(
+    "RUN_LABEL", "compare_qwen_BimanualPutRedBellPepperInBin_10"
+)
 
 
 def latest_results(label):
