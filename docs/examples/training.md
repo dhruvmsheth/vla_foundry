@@ -162,26 +162,26 @@ the `BimanualPutRedBellPepperInBin` robotics task.
 
 1. The `vla_diffusion_bellpepper.yaml` preset bundles the DiffusionPolicy head, the PaliGemma2 VLM backbone, the Spartan data pipeline, and the LBM hyperparameters.
 
-## VLA DiffusionPolicy (Qwen3-VL-2B-Thinking backbone)
+## VLA DiffusionPolicy (Qwen3-VL-2B-Thinking Backbone)
 
-Same VLA recipe, but swap in a Qwen3-VL-2B-Thinking backbone at the CLI:
+Same VLA recipe, but with a Qwen3-VL-2B-Thinking backbone and Qwen-compatible
+image processor kwargs in the preset:
 
 **Source:** `examples/training/vla_diffusion_redbellpepper_qwen_2b_thinking.sh`
 
 ```bash
 uv run torchrun --nproc_per_node=1 --nnodes=1 vla_foundry/main.py \
     --hparams.torchcompile False \
-    --config_path vla_foundry/config_presets/training_jobs/vla_diffusion_bellpepper.yaml \
+    --config_path vla_foundry/config_presets/training_jobs/vla_diffusion_bellpepper_qwen3vl_2b.yaml \
     --remote_sync s3://your-bucket/your-path/model_checkpoints/vla_diffusion \
     --num_checkpoints 5 \
     --total_train_samples 1000 \
-    --model.vision_language_backbone.hf_pretrained "Qwen/Qwen3-VL-2B-Thinking" \  # (1)!
-    --data.processor "Qwen/Qwen3-VL-2B-Thinking" \                                # (2)!
     "$@"
 ```
 
-1. Override the backbone from the YAML preset by pointing `hf_pretrained` at a different HF model.
-2. The data processor must match the backbone's tokenizer/image processor.
+The Qwen processor expects `processor_kwargs.size.shortest_edge` and
+`processor_kwargs.size.longest_edge`; this preset sets those directly instead of
+inheriting the PaliGemma height/width image size fields.
 
 ---
 

@@ -142,6 +142,7 @@ Located in `vla_foundry/config_presets/training_jobs/`. These are complete exper
 | `lbm_hparams_6cams.yaml` | LBM | 6-camera hparam configuration | `training_jobs/lbm_hparams_6cams.yaml` |
 | `lbm_multitask_4cams.yaml` | Diffusion Policy | LBM multitask 4-camera with 410M transformer, EMA | `training_jobs/lbm_multitask_4cams.yaml` |
 | `vla_diffusion_bellpepper.yaml` | VLA Diffusion | BellPepper task with PaliGemma2 VLM backbone | `training_jobs/vla_diffusion_bellpepper.yaml` |
+| `vla_diffusion_bellpepper_qwen3vl_2b.yaml` | VLA Diffusion | BellPepper task with Qwen3-VL-2B-Thinking VLM backbone | `training_jobs/vla_diffusion_bellpepper_qwen3vl_2b.yaml` |
 | `vla_diffusion_tiny_test.yaml` | VLA Diffusion | Tiny VLA diffusion for smoke testing (local data) | `training_jobs/vla_diffusion_tiny_test.yaml` |
 
 ### Anatomy of a Training Job Preset

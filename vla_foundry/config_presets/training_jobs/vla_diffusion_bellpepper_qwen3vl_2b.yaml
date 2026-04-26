@@ -1,0 +1,41 @@
+model:
+  <<: !include ../models/vla_diffusion_paligemma2.yaml
+  vision_language_backbone:
+    type: vlm_backbone
+    hf_pretrained: Qwen/Qwen3-VL-2B-Thinking
+    num_vlm_layers_to_use: 4
+
+data:
+  <<: !include ../data/lbm/lbm_data_params.yaml
+  <<: !include ../data/vla_diffusion.yaml
+  processor: Qwen/Qwen3-VL-2B-Thinking
+  processor_kwargs:
+    size:
+      shortest_edge: 224
+      longest_edge: 224
+  dataset_manifest:
+    - s3://your-bucket/your-path/vla_foundry_datasets/stage3_singletask_sim/BimanualPutRedBellPepperInBin/shards/manifest.jsonl
+  dataset_statistics:
+    - s3://your-bucket/your-path/vla_foundry_datasets/stage3_singletask_sim/BimanualPutRedBellPepperInBin/shards/stats.json
+  dataset_modality:
+    - robotics
+  dataset_weighting:
+    - 1.0
+  camera_names:
+    - scene_right_0
+    - scene_left_0
+    - wrist_left_minus
+    - wrist_left_plus
+    - wrist_right_minus
+    - wrist_right_plus
+  image_indices:
+    - -1
+    - 0
+
+distributed:
+  fsdp: True
+
+hparams:
+  <<: !include ../hparams/diffusion_policy.yaml
+  per_gpu_batch_size: 1
+  global_batch_size: 2
