@@ -51,6 +51,7 @@ def score_records(
     camera: str,
     image_size: int,
     batch_size: int,
+    num_workers: int,
     device_name: str,
     precision: str,
     weight_mode: str,
@@ -67,10 +68,17 @@ def score_records(
         state_dim=int(config["state_dim"]),
         camera=camera,
     )
-    loader = DataLoader(dataset, batch_size=batch_size, shuffle=False, collate_fn=QwenValueCollator(processor))
+    loader = DataLoader(
+        dataset,
+        batch_size=batch_size,
+        shuffle=False,
+        collate_fn=QwenValueCollator(processor),
+        num_workers=num_workers,
+        pin_memory=device.type == "cuda",
+    )
 
     predicted_values: list[float] = []
-    for batch in loader:
+    for batch_idx, batch in enumerate(loader, start=1):
         batch = move_batch(batch, device)
         batch.pop("target_bin")
         batch.pop("target_value")
@@ -79,6 +87,18 @@ def score_records(
             logits = model(batch)
             values = expected_value_from_logits(logits.float())
         predicted_values.extend(float(value) for value in values.detach().cpu().tolist())
+        if batch_idx == 1 or batch_idx % 20 == 0:
+            print(
+                json.dumps(
+                    {
+                        "scored_examples": len(predicted_values),
+                        "total_examples": len(records),
+                        "batch": batch_idx,
+                    },
+                    sort_keys=True,
+                ),
+                flush=True,
+            )
 
     scored = []
     for record, predicted_value in zip(records, predicted_values, strict=True):
@@ -140,6 +160,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--camera", default="scene_right_0")
     parser.add_argument("--image_size", type=int, default=224)
     parser.add_argument("--batch_size", type=int, default=32)
+    parser.add_argument("--num_workers", type=int, default=4)
     parser.add_argument("--device", default="auto")
     parser.add_argument("--precision", choices=["fp32", "bf16", "fp16"], default="bf16")
     parser.add_argument("--weight_mode", choices=["linear", "exp", "binary"], default="exp")
@@ -158,6 +179,7 @@ def main() -> None:
         camera=args.camera,
         image_size=args.image_size,
         batch_size=args.batch_size,
+        num_workers=args.num_workers,
         device_name=args.device,
         precision=args.precision,
         weight_mode=args.weight_mode,
