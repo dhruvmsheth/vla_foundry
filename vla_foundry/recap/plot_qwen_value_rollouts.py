@@ -354,7 +354,7 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
-    records = load_jsonl(args.value_jsonl)
+    records = load_jsonl(Path(args.value_jsonl))
     grouped = group_records_by_episode(records)
     episode_ids = choose_episode_ids(
         grouped,
