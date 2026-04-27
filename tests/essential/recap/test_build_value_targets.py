@@ -42,15 +42,17 @@ def test_build_value_targets_success_and_failure_returns(tmp_path: Path) -> None
     examples = [json.loads(line) for line in (tmp_path / "targets" / "value_examples.jsonl").read_text().splitlines()]
 
     assert summary["num_examples"] == 3
+    assert summary["normalization_horizon"] == 1
+    assert summary["normalization_denominator"] == 11.0
     by_episode_step = {(example["episode_id"], example["step_index"]): example for example in examples}
     success_first = by_episode_step[("success", 0)]
     success_terminal = by_episode_step[("success", 1)]
     failure = by_episode_step[("failure", 0)]
     assert success_first["raw_return"] == -1.0
-    assert success_first["normalized_value"] == -0.1
+    assert success_first["normalized_value"] == -1.0 / 11.0
     assert success_first["value_bin"] == 9
     assert success_terminal["raw_return"] == -0.0
     assert success_terminal["value_bin"] == 10
     assert failure["raw_return"] == -10.0
-    assert failure["normalized_value"] == -1.0
-    assert failure["value_bin"] == 0
+    assert failure["normalized_value"] == -10.0 / 11.0
+    assert failure["value_bin"] == 1

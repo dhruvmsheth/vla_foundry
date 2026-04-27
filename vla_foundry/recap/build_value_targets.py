@@ -43,6 +43,7 @@ def build_value_targets(
     val_fraction: float = 0.2,
     seed: int = 42,
     preferred_camera: str | None = "scene_right_0",
+    normalization_horizon: int | None = None,
 ) -> dict[str, Any]:
     if c_fail <= 0:
         raise ValueError("c_fail must be positive")
@@ -63,6 +64,14 @@ def build_value_targets(
             raise ValueError(f"Step is missing episode_id: {step}")
         by_episode[episode_id].append(step)
 
+    max_steps_to_terminal = max((len(episode_steps) - 1 for episode_steps in by_episode.values()), default=0)
+    horizon = max_steps_to_terminal if normalization_horizon is None else normalization_horizon
+    if horizon < max_steps_to_terminal:
+        raise ValueError(
+            f"normalization_horizon={horizon} is smaller than max observed steps_to_terminal={max_steps_to_terminal}"
+        )
+    normalization_denominator = c_fail + float(horizon)
+
     examples: list[dict[str, Any]] = []
     for _episode_id, episode_steps in sorted(by_episode.items()):
         episode_steps.sort(key=lambda record: int(record.get("step_index", 0)))
@@ -76,8 +85,9 @@ def build_value_targets(
             raw_return = -float(steps_to_terminal)
             if not is_success:
                 raw_return -= c_fail
-            clipped_return = max(-c_fail, min(0.0, raw_return))
-            normalized_value = clipped_return / c_fail
+            min_return = -normalization_denominator
+            clipped_return = max(min_return, min(0.0, raw_return))
+            normalized_value = clipped_return / normalization_denominator
             image_paths_absolute = _build_absolute_image_paths(step, trajectory_dir)
             selected_image_path = _select_image_path(image_paths_absolute, preferred_camera)
             examples.append(
@@ -92,6 +102,8 @@ def build_value_targets(
                     "value_bin": _value_to_bin(normalized_value, num_bins),
                     "num_value_bins": num_bins,
                     "c_fail": c_fail,
+                    "normalization_horizon": horizon,
+                    "normalization_denominator": normalization_denominator,
                     "trajectory_dir": str(trajectory_dir),
                     "image_paths_absolute": image_paths_absolute,
                     "selected_image_path": selected_image_path,
@@ -125,6 +137,9 @@ def build_value_targets(
         "trajectory_dir": str(trajectory_dir),
         "output_dir": str(output_dir),
         "c_fail": c_fail,
+        "max_steps_to_terminal": max_steps_to_terminal,
+        "normalization_horizon": horizon,
+        "normalization_denominator": normalization_denominator,
         "num_value_bins": num_bins,
         "preferred_camera": preferred_camera,
         "num_episodes": len(by_episode),
@@ -149,6 +164,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--val_fraction", type=float, default=0.2, help="Episode-level validation split fraction.")
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--preferred_camera", type=str, default="scene_right_0")
+    parser.add_argument(
+        "--normalization_horizon",
+        type=int,
+        default=None,
+        help="Return normalization horizon. Defaults to the max observed steps_to_terminal.",
+    )
     return parser.parse_args()
 
 
@@ -162,6 +183,7 @@ def main() -> None:
         val_fraction=args.val_fraction,
         seed=args.seed,
         preferred_camera=args.preferred_camera,
+        normalization_horizon=args.normalization_horizon,
     )
     print(json.dumps(summary, indent=2, sort_keys=True))
 
