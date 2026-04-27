@@ -23,7 +23,13 @@ def _build_absolute_image_paths(step: dict[str, Any], trajectory_dir: Path) -> d
     image_paths = step.get("image_paths") or {}
     if not isinstance(image_paths, dict):
         return {}
-    return {str(camera): str((trajectory_dir / str(path)).resolve()) for camera, path in image_paths.items()}
+    absolute_paths = {}
+    for camera, path in image_paths.items():
+        image_path = Path(str(path))
+        if not image_path.is_absolute():
+            image_path = trajectory_dir / image_path
+        absolute_paths[str(camera)] = str(image_path)
+    return absolute_paths
 
 
 def _select_image_path(image_paths: dict[str, str], preferred_camera: str | None) -> str | None:
