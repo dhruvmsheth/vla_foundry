@@ -47,24 +47,39 @@ if [[ ! -x "${LBM_WRAPPER}" ]]; then
   exit 1
 fi
 
+CHECKPOINT_DIRECTORY="${MODEL_REPO}"
+if [[ "${CHECKPOINT_DIRECTORY}" != hf://* && "${CHECKPOINT_DIRECTORY}" != s3://* && "${CHECKPOINT_DIRECTORY}" != /* ]]; then
+  CHECKPOINT_DIRECTORY="hf://${CHECKPOINT_DIRECTORY}"
+fi
+
 METADATA_DIR="${PROJECT_ROOT}/data/lbm_preprocessed"
 mkdir -p "${METADATA_DIR}"
 
 HF_HOME="${HF_HOME}" PYTHONPATH="${VLA_SITE}:${VLA_ROOT}" /usr/bin/python3.12 - <<PY
 from pathlib import Path
 import shutil
+import fsspec
 from huggingface_hub import hf_hub_download
 
-repo = "${MODEL_REPO}"
+checkpoint_directory = "${CHECKPOINT_DIRECTORY}"
 out = Path("${METADATA_DIR}")
 out.mkdir(parents=True, exist_ok=True)
 
 for name in ["preprocessing_config.yaml", "stats.json", "processing_metadata.json"]:
     dst = out / name
-    if not dst.exists():
-        src = hf_hub_download(repo_id=repo, filename=name)
+    if checkpoint_directory.startswith("hf://"):
+        src = hf_hub_download(repo_id=checkpoint_directory.removeprefix("hf://"), filename=name)
         shutil.copyfile(src, dst)
-        print(f"copied {name} -> {dst}")
+    elif checkpoint_directory.startswith("s3://"):
+        src = checkpoint_directory.rstrip("/") + "/" + name
+        with fsspec.open(src, "rb") as f_in, dst.open("wb") as f_out:
+            shutil.copyfileobj(f_in, f_out)
+    else:
+        src = Path(checkpoint_directory) / name
+        if not src.exists():
+            raise FileNotFoundError(f"Missing metadata file in local checkpoint directory: {src}")
+        shutil.copyfile(src, dst)
+    print(f"copied {name} -> {dst}")
 
 manifest = out / "manifest.jsonl"
 if not manifest.exists():
@@ -138,7 +153,7 @@ NUM_PROCESSES="${NUM_PROCESSES}" \
 MAX_RETRIES=0 \
 POLICY_READY_TIMEOUT="${POLICY_READY_TIMEOUT}" \
 INFERENCE_WORKDIR=/opt/anzu \
-INFERENCE_CMD_OVERRIDE="PATH=${PYTHON_BIN_DIR}:\$PATH HF_HOME=${HF_HOME} XDG_CACHE_HOME=${XDG_CACHE_HOME} TMPDIR=${TMPDIR} HF_HUB_OFFLINE=0 TRANSFORMERS_OFFLINE=0 HF_DATASETS_OFFLINE=0 PYTHONPATH=${EVAL_COMPAT_DIR}:${VLA_SITE}:${VLA_ROOT} python ${POLICY_PY} --checkpoint_directory hf://${MODEL_REPO} --device cuda --num_flow_steps ${NUM_FLOW_STEPS} --open_loop_steps ${OPEN_LOOP_STEPS} ${TRAJECTORY_ARGS}" \
+INFERENCE_CMD_OVERRIDE="PATH=${PYTHON_BIN_DIR}:\$PATH HF_HOME=${HF_HOME} XDG_CACHE_HOME=${XDG_CACHE_HOME} TMPDIR=${TMPDIR} HF_HUB_OFFLINE=0 TRANSFORMERS_OFFLINE=0 HF_DATASETS_OFFLINE=0 PYTHONPATH=${EVAL_COMPAT_DIR}:${VLA_SITE}:${VLA_ROOT} python ${POLICY_PY} --checkpoint_directory ${CHECKPOINT_DIRECTORY} --device cuda --num_flow_steps ${NUM_FLOW_STEPS} --open_loop_steps ${OPEN_LOOP_STEPS} ${TRAJECTORY_ARGS}" \
 timeout "${TIMEOUT_SECONDS}" bash "${LBM_WRAPPER}"
 
 latest_result="$(find "${SAVE_DIR}" -name results.json -printf '%T@ %p\n' | sort -nr | head -1 | cut -d' ' -f2-)"
