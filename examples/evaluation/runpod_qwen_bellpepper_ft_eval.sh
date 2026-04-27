@@ -28,8 +28,15 @@ TIMEOUT_SECONDS="${TIMEOUT_SECONDS:-3600}"
 SAVE_DIR="${SAVE_DIR:-${PROJECT_ROOT}/outputs/qwen_foundry_ft_4k_v2_eval}"
 LOG_DIR="${LOG_DIR:-${PROJECT_ROOT}/outputs/logs}"
 LBM_WRAPPER="${LBM_WRAPPER:-/opt/anzu/run_inference_bundle.sh}"
+RECAP_SAVE_IMAGES="${RECAP_SAVE_IMAGES:-1}"
+RECAP_IMAGE_EVERY_N="${RECAP_IMAGE_EVERY_N:-1}"
+RECAP_IMAGE_FORMAT="${RECAP_IMAGE_FORMAT:-jpg}"
+RECAP_JPEG_QUALITY="${RECAP_JPEG_QUALITY:-90}"
 
 mkdir -p "${HF_HOME}" "${XDG_CACHE_HOME}" "${TMPDIR}" "${SAVE_DIR}" "${LOG_DIR}"
+if [[ -n "${RECAP_TRAJECTORY_DIR:-}" ]]; then
+  mkdir -p "${RECAP_TRAJECTORY_DIR}"
+fi
 
 if [[ ! -f "${HF_HOME}/token" && -f "${HOME}/.cache/huggingface/token" ]]; then
   cp "${HOME}/.cache/huggingface/token" "${HF_HOME}/token"
@@ -106,6 +113,16 @@ fi
 
 JOB_NAME="${JOB_NAME:-qwen_foundry_ft_4k_v2_eval_$(date +%Y%m%d_%H%M%S)}"
 
+TRAJECTORY_ARGS=""
+if [[ -n "${RECAP_TRAJECTORY_DIR:-}" ]]; then
+  TRAJECTORY_ARGS="--trajectory_output_dir ${RECAP_TRAJECTORY_DIR} --trajectory_image_every_n ${RECAP_IMAGE_EVERY_N} --trajectory_image_format ${RECAP_IMAGE_FORMAT} --trajectory_jpeg_quality ${RECAP_JPEG_QUALITY}"
+  if [[ "${RECAP_SAVE_IMAGES}" == "0" ]]; then
+    TRAJECTORY_ARGS="${TRAJECTORY_ARGS} --no-trajectory_save_images"
+  else
+    TRAJECTORY_ARGS="${TRAJECTORY_ARGS} --trajectory_save_images"
+  fi
+fi
+
 unset HF_HUB_OFFLINE
 unset TRANSFORMERS_OFFLINE
 unset HF_DATASETS_OFFLINE
@@ -121,7 +138,7 @@ NUM_PROCESSES="${NUM_PROCESSES}" \
 MAX_RETRIES=0 \
 POLICY_READY_TIMEOUT="${POLICY_READY_TIMEOUT}" \
 INFERENCE_WORKDIR=/opt/anzu \
-INFERENCE_CMD_OVERRIDE="PATH=${PYTHON_BIN_DIR}:\$PATH HF_HOME=${HF_HOME} XDG_CACHE_HOME=${XDG_CACHE_HOME} TMPDIR=${TMPDIR} HF_HUB_OFFLINE=0 TRANSFORMERS_OFFLINE=0 HF_DATASETS_OFFLINE=0 PYTHONPATH=${EVAL_COMPAT_DIR}:${VLA_SITE}:${VLA_ROOT} python ${POLICY_PY} --checkpoint_directory hf://${MODEL_REPO} --device cuda --num_flow_steps ${NUM_FLOW_STEPS} --open_loop_steps ${OPEN_LOOP_STEPS}" \
+INFERENCE_CMD_OVERRIDE="PATH=${PYTHON_BIN_DIR}:\$PATH HF_HOME=${HF_HOME} XDG_CACHE_HOME=${XDG_CACHE_HOME} TMPDIR=${TMPDIR} HF_HUB_OFFLINE=0 TRANSFORMERS_OFFLINE=0 HF_DATASETS_OFFLINE=0 PYTHONPATH=${EVAL_COMPAT_DIR}:${VLA_SITE}:${VLA_ROOT} python ${POLICY_PY} --checkpoint_directory hf://${MODEL_REPO} --device cuda --num_flow_steps ${NUM_FLOW_STEPS} --open_loop_steps ${OPEN_LOOP_STEPS} ${TRAJECTORY_ARGS}" \
 timeout "${TIMEOUT_SECONDS}" bash "${LBM_WRAPPER}"
 
 latest_result="$(find "${SAVE_DIR}" -name results.json -printf '%T@ %p\n' | sort -nr | head -1 | cut -d' ' -f2-)"

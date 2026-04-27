@@ -31,6 +31,7 @@ from vla_foundry.file_utils import (
     yaml_load,
 )
 from vla_foundry.inference.robotics.data_adapter import PolicyDataAdapter
+from vla_foundry.inference.robotics.trajectory_collector import TrajectoryCollector
 from vla_foundry.logger import setup_logging
 from vla_foundry.models import create_model
 from vla_foundry.params.train_experiment_params import load_experiment_params_from_yaml
@@ -62,6 +63,11 @@ class InferenceDiffusionPolicy(Policy):
         num_flow_steps: int = 10,
         gripper_debounce_open_threshold: float = 0.6,
         gripper_debounce_close_threshold: float = 0.4,
+        trajectory_output_dir: str | None = None,
+        trajectory_save_images: bool = True,
+        trajectory_image_every_n: int = 1,
+        trajectory_image_format: str = "jpg",
+        trajectory_jpeg_quality: int = 90,
     ):
         # locals() at the top of __init__ contains only the function parameters (plus self).
         # Keep this before any other assignment so it doesn't pick up extra local variables.
@@ -107,6 +113,17 @@ class InferenceDiffusionPolicy(Policy):
         self.num_flow_steps = num_flow_steps
         self.gripper_debounce_open_threshold = gripper_debounce_open_threshold
         self.gripper_debounce_close_threshold = gripper_debounce_close_threshold
+        self.trajectory_collector = None
+        if trajectory_output_dir:
+            self.trajectory_collector = TrajectoryCollector(
+                trajectory_output_dir,
+                checkpoint_directory=checkpoint_directory,
+                checkpoint_path=self.checkpoint_path,
+                save_images=trajectory_save_images,
+                image_every_n=trajectory_image_every_n,
+                image_format=trajectory_image_format,
+                jpeg_quality=trajectory_jpeg_quality,
+            )
 
         # Reload the config (the second call overwrites self.cfg via draccus).
         self.cfg = load_experiment_params_from_yaml(
@@ -199,6 +216,8 @@ class InferenceDiffusionPolicy(Policy):
         metadata.checkpoint_path = self.checkpoint_path
         runtime_info = {k: str(v) for k, v in self._init_kwargs.items()}
         runtime_info["language_instruction"] = self._language_instruction
+        if self.trajectory_collector is not None:
+            runtime_info["trajectory_output_dir"] = str(self.trajectory_collector.output_dir)
         metadata.runtime_information = runtime_info
         return metadata
 
@@ -213,8 +232,13 @@ class InferenceDiffusionPolicy(Policy):
         # Log observation to visualizer
         visualizer.log_robot_gym_multiarm_observation("observation", observation)
 
+        generated_new_action_chunk = False
+        step_index = self._step_count[client_id]
+        open_loop_step = self.current_open_loop_step[client_id]
+
         # Recompute the trajectory if we are at the beginning of a new open loop step
         if self.current_open_loop_step[client_id] % self.open_loop_steps == self.open_loop_steps - 1:
+            generated_new_action_chunk = True
             # Step the data adapter before getting the model input that needs to be updated for current step
             # Get the model input
             model_input = self.data_adapter[client_id].get_model_input(observation)
@@ -253,11 +277,28 @@ class InferenceDiffusionPolicy(Policy):
         actions = self.data_adapter[client_id].step_action()
         remaining_actions, remaining_slots = self.data_adapter[client_id].get_remaining_actions_in_buffer()
         self.current_open_loop_step[client_id] += 1
-        self._step_count[client_id] += 1
 
         # Log action to visualizer
         visualizer.log_robot_gym_poses_and_grippers("action", actions)
 
+        if self.trajectory_collector is not None:
+            try:
+                self.trajectory_collector.record_step(
+                    client_id=client_id,
+                    observation=observation,
+                    action=actions,
+                    adapter=self.data_adapter[client_id],
+                    step_index=step_index,
+                    language_instruction=self._language_instruction,
+                    generated_new_action_chunk=generated_new_action_chunk,
+                    remaining_actions=remaining_actions,
+                    remaining_slots=remaining_slots,
+                    open_loop_step=open_loop_step,
+                )
+            except Exception:  # noqa: BLE001 - trajectory logging must not change policy behavior.
+                logging.exception("Failed to record RECAP trajectory step")
+
+        self._step_count[client_id] += 1
         return actions
 
     def step_batch(self, observations: dict[uuid.UUID, MultiarmObservation]) -> dict[uuid.UUID, PosesAndGrippers]:
@@ -329,9 +370,11 @@ class InferenceDiffusionPolicy(Policy):
             self.should_reset[uuid_value] = True
 
         # Reset counters only for the clients being reset (not all clients)
-        for uuid_value in clients:
+        for uuid_value, seed in clients.items():
             self._step_count[uuid_value] = 0
             self.current_open_loop_step.pop(uuid_value, None)
+            if self.trajectory_collector is not None:
+                self.trajectory_collector.start_episode(uuid_value, reset_seed=seed)
 
 
 def main():
@@ -356,6 +399,37 @@ def main():
         default=0.4,
         help="Gripper value (0-1) below which an open gripper closes (e.g. 0.4). Both thresholds needed to enable.",
     )
+    parser.add_argument(
+        "--trajectory_output_dir",
+        type=str,
+        default=os.environ.get("RECAP_TRAJECTORY_DIR"),
+        help="Optional directory for RECAP trajectory JSONL/images. Also configurable via RECAP_TRAJECTORY_DIR.",
+    )
+    parser.add_argument(
+        "--trajectory_save_images",
+        action=argparse.BooleanOptionalAction,
+        default=os.environ.get("RECAP_SAVE_IMAGES", "1") != "0",
+        help="Save per-step camera images when trajectory collection is enabled.",
+    )
+    parser.add_argument(
+        "--trajectory_image_every_n",
+        type=int,
+        default=int(os.environ.get("RECAP_IMAGE_EVERY_N", "1")),
+        help="Save images every N policy steps when trajectory collection is enabled.",
+    )
+    parser.add_argument(
+        "--trajectory_image_format",
+        type=str,
+        default=os.environ.get("RECAP_IMAGE_FORMAT", "jpg"),
+        choices=("jpg", "jpeg", "png"),
+        help="Image format for saved trajectory frames.",
+    )
+    parser.add_argument(
+        "--trajectory_jpeg_quality",
+        type=int,
+        default=int(os.environ.get("RECAP_JPEG_QUALITY", "90")),
+        help="JPEG quality for saved trajectory frames.",
+    )
 
     args = parser.parse_args()
 
@@ -372,6 +446,11 @@ def main():
         open_loop_steps=args.open_loop_steps,
         gripper_debounce_open_threshold=args.gripper_debounce_open_threshold,
         gripper_debounce_close_threshold=args.gripper_debounce_close_threshold,
+        trajectory_output_dir=args.trajectory_output_dir,
+        trajectory_save_images=args.trajectory_save_images,
+        trajectory_image_every_n=args.trajectory_image_every_n,
+        trajectory_image_format=args.trajectory_image_format,
+        trajectory_jpeg_quality=args.trajectory_jpeg_quality,
     )
 
     # Create run name with date identifier
