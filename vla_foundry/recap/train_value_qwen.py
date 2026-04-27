@@ -15,7 +15,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from PIL import Image
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader, Dataset, WeightedRandomSampler
 from transformers import AutoModelForImageTextToText, AutoProcessor
 
 from vla_foundry.recap.label_trajectories import load_jsonl
@@ -39,6 +39,8 @@ class QwenValueTrainConfig:
     max_train_steps: int | None
     lr: float
     weight_decay: float
+    value_loss_weight: float
+    balance_success_failure: bool
     num_workers: int
     seed: int
     device: str
@@ -237,10 +239,36 @@ def move_batch(batch: dict[str, Any], device: torch.device) -> dict[str, Any]:
     return {key: value.to(device) if isinstance(value, torch.Tensor) else value for key, value in batch.items()}
 
 
+def value_supervision_loss(
+    logits: torch.Tensor,
+    target_bin: torch.Tensor,
+    target_value: torch.Tensor,
+    value_loss_weight: float,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    ce_loss = F.cross_entropy(logits, target_bin)
+    pred_value = expected_value_from_logits(logits.float())
+    value_mse = F.mse_loss(pred_value, target_value.float())
+    total_loss = ce_loss + value_loss_weight * value_mse
+    return total_loss, ce_loss, value_mse, pred_value
+
+
+def success_failure_sampler(dataset: QwenValueDataset) -> WeightedRandomSampler:
+    labels = [bool(record.get("terminal_is_success")) for record in dataset.records]
+    counts = {label: max(1, labels.count(label)) for label in {False, True}}
+    weights = [1.0 / counts[label] for label in labels]
+    return WeightedRandomSampler(weights, num_samples=len(weights), replacement=True)
+
+
 @torch.no_grad()
-def evaluate(model: QwenValueModel, loader: DataLoader, device: torch.device, precision: str) -> dict[str, float]:
+def evaluate(
+    model: QwenValueModel,
+    loader: DataLoader,
+    device: torch.device,
+    precision: str,
+    value_loss_weight: float,
+) -> dict[str, float]:
     model.eval()
-    total_loss = total_mae = total_correct = total_count = 0.0
+    total_loss = total_ce_loss = total_value_mse = total_mae = total_correct = total_count = 0.0
     success_values: list[float] = []
     failure_values: list[float] = []
     for batch in loader:
@@ -250,10 +278,16 @@ def evaluate(model: QwenValueModel, loader: DataLoader, device: torch.device, pr
         terminal_success = batch.pop("terminal_is_success")
         with make_autocast(device, precision):
             logits = model(batch)
-            loss = F.cross_entropy(logits, target_bin)
-        pred_value = expected_value_from_logits(logits.float())
+            loss, ce_loss, value_mse, pred_value = value_supervision_loss(
+                logits,
+                target_bin,
+                target_value,
+                value_loss_weight,
+            )
         count = float(target_value.numel())
         total_loss += float(loss.item()) * count
+        total_ce_loss += float(ce_loss.item()) * count
+        total_value_mse += float(value_mse.item()) * count
         total_mae += float((pred_value - target_value).abs().sum().item())
         total_correct += float((logits.argmax(dim=-1) == target_bin).sum().item())
         total_count += count
@@ -265,6 +299,8 @@ def evaluate(model: QwenValueModel, loader: DataLoader, device: torch.device, pr
 
     metrics = {
         "loss": total_loss / max(1.0, total_count),
+        "ce_loss": total_ce_loss / max(1.0, total_count),
+        "value_mse": total_value_mse / max(1.0, total_count),
         "mae": total_mae / max(1.0, total_count),
         "bin_accuracy": total_correct / max(1.0, total_count),
         "mean_pred_success": float(np.mean(success_values)) if success_values else math.nan,
@@ -324,10 +360,12 @@ def train(config: QwenValueTrainConfig) -> dict[str, float]:
         else None
     )
     collator = QwenValueCollator(processor)
+    sampler = success_failure_sampler(train_dataset) if config.balance_success_failure else None
     train_loader = DataLoader(
         train_dataset,
         batch_size=config.batch_size,
-        shuffle=True,
+        shuffle=sampler is None,
+        sampler=sampler,
         num_workers=config.num_workers,
         collate_fn=collator,
         pin_memory=device.type == "cuda",
@@ -383,16 +421,22 @@ def train(config: QwenValueTrainConfig) -> dict[str, float]:
             optimizer.zero_grad(set_to_none=True)
             with make_autocast(device, config.precision):
                 logits = model(batch)
-                loss = F.cross_entropy(logits, target_bin)
+                loss, ce_loss, value_mse, pred_value = value_supervision_loss(
+                    logits,
+                    target_bin,
+                    target_value,
+                    config.value_loss_weight,
+                )
             loss.backward()
             torch.nn.utils.clip_grad_norm_(trainable_parameters, 1.0)
             optimizer.step()
             step += 1
 
             if step % 10 == 0 or step == 1:
-                pred_value = expected_value_from_logits(logits.detach().float())
                 train_metrics = {
                     "train/loss": float(loss.item()),
+                    "train/ce_loss": float(ce_loss.item()),
+                    "train/value_mse": float(value_mse.item()),
                     "train/mae": float((pred_value - target_value).abs().mean().item()),
                     "train/bin_accuracy": float((logits.argmax(dim=-1) == target_bin).float().mean().item()),
                     "epoch": epoch,
@@ -406,7 +450,7 @@ def train(config: QwenValueTrainConfig) -> dict[str, float]:
                 break
 
         if val_loader is not None:
-            evaluated_metrics = evaluate(model, val_loader, device, config.precision)
+            evaluated_metrics = evaluate(model, val_loader, device, config.precision, config.value_loss_weight)
             val_metrics = {f"val/{key}": value for key, value in evaluated_metrics.items()}
             latest_metrics = {"step": step, "epoch": epoch, **val_metrics}
             print(json.dumps(latest_metrics, indent=2, sort_keys=True))
@@ -440,6 +484,17 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max_train_steps", type=int, default=None)
     parser.add_argument("--lr", type=float, default=1e-4)
     parser.add_argument("--weight_decay", type=float, default=1e-4)
+    parser.add_argument(
+        "--value_loss_weight",
+        type=float,
+        default=1.0,
+        help="Weight on MSE between expected distributional value and scalar normalized return.",
+    )
+    parser.add_argument(
+        "--balance_success_failure",
+        action="store_true",
+        help="Sample successful and failed terminal trajectories with equal probability.",
+    )
     parser.add_argument("--num_workers", type=int, default=2)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--device", default="auto")
