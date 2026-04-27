@@ -212,12 +212,8 @@ class RecapPolicyDataset(Dataset):
         self.records_by_episode = by_episode
         self.pose_lookup = _pose_group_lookup(getattr(data_params, "pose_groups", []))
         self.examples: list[tuple[str, int]] = []
-        past = int(data_params.lowdim_past_timesteps)
-        future = int(data_params.lowdim_future_timesteps)
         for episode_id, episode_records in sorted(by_episode.items()):
             for idx, record in enumerate(episode_records):
-                if idx - past < 0 or idx + future >= len(episode_records):
-                    continue
                 if float(record.get("recap_weight", 0.0)) <= 0.0:
                     continue
                 self.examples.append((episode_id, idx))
@@ -240,7 +236,11 @@ class RecapPolicyDataset(Dataset):
         anchor = episode_records[idx]
         past = int(self.data_params.lowdim_past_timesteps)
         future = int(self.data_params.lowdim_future_timesteps)
-        sequence_records = episode_records[idx - past : idx + future + 1]
+        raw_sequence_indices = list(range(idx - past, idx + future + 1))
+        valid_sequence = [0 <= source_idx < len(episode_records) for source_idx in raw_sequence_indices]
+        sequence_records = [
+            episode_records[min(max(source_idx, 0), len(episode_records) - 1)] for source_idx in raw_sequence_indices
+        ]
         sequence_actions = [record.get("action_fields") or {} for record in sequence_records]
         if any("error" in action for action in sequence_actions):
             raise ValueError(f"Action extraction error in episode {episode_id} index {idx}")
@@ -248,7 +248,7 @@ class RecapPolicyDataset(Dataset):
         images: dict[str, np.ndarray] = {}
         image_indices = list(self.data_params.image_indices)
         for image_offset in image_indices:
-            source_idx = idx + int(image_offset)
+            source_idx = min(max(idx + int(image_offset), 0), len(episode_records) - 1)
             source = episode_records[source_idx]
             image_paths = source.get("image_paths_absolute") or {}
             for camera_name in self.data_params.camera_names:
@@ -294,8 +294,13 @@ class RecapPolicyDataset(Dataset):
         seq_len = len(sequence_records)
         past_mask = torch.zeros(seq_len, dtype=torch.bool)
         future_mask = torch.zeros(seq_len, dtype=torch.bool)
-        past_mask[:past] = True
-        future_mask[past:] = True
+        for seq_idx, (raw_idx, is_valid) in enumerate(zip(raw_sequence_indices, valid_sequence, strict=True)):
+            if not is_valid:
+                continue
+            if raw_idx < idx:
+                past_mask[seq_idx] = True
+            else:
+                future_mask[seq_idx] = True
 
         return {
             "images": images,
