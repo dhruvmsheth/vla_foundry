@@ -1,0 +1,66 @@
+{
+  "task": "BimanualPutSpatulaOnPlateFromDryingRack",
+  "matched_eval_scenario_ids": [100, 101, 102, 103, 104, 105, 106, 107, 108, 109],
+  "sft12k_ckpt3": {
+    "successes": 5,
+    "total": 10,
+    "success_rate": 0.5
+  },
+  "recap_lr2e7_500_steps": {
+    "successes": 6,
+    "total": 10,
+    "success_rate": 0.6
+  },
+  "per_scenario": [
+    {"scenario_index": 100, "sft12k": true, "recap": true},
+    {"scenario_index": 101, "sft12k": false, "recap": false},
+    {"scenario_index": 102, "sft12k": true, "recap": false},
+    {"scenario_index": 103, "sft12k": true, "recap": true},
+    {"scenario_index": 104, "sft12k": true, "recap": true},
+    {"scenario_index": 105, "sft12k": false, "recap": true},
+    {"scenario_index": 106, "sft12k": false, "recap": false},
+    {"scenario_index": 107, "sft12k": false, "recap": true},
+    {"scenario_index": 108, "sft12k": false, "recap": true},
+    {"scenario_index": 109, "sft12k": true, "recap": false}
+  ],
+  "value_targets": {
+    "episodes": 200,
+    "examples": 42299,
+    "train_examples": 33170,
+    "val_examples": 9129,
+    "rollout_success_rate": 0.655,
+    "num_value_bins": 50,
+    "c_fail": 500.0,
+    "normalization_mode": "recap"
+  },
+  "value_model": {
+    "val_mae": 0.2924458820073703,
+    "val_value_mse": 0.17754843754517619,
+    "val_bin_accuracy": 0.37671157848614306,
+    "val_mean_pred_success": -0.46880379909867637,
+    "val_mean_pred_failure": -0.6698049442481715,
+    "val_success_failure_gap": 0.20100114514949513
+  },
+  "recap_scoring": {
+    "num_examples": 42299,
+    "num_positive_advantage": 12151,
+    "positive_advantage_fraction": 0.2872644743374548,
+    "mean_weight": 1.1679483447054697,
+    "mean_weight_success": 1.3257093680481309,
+    "mean_weight_failure": 1.0000000003025618,
+    "max_weight": 5.0,
+    "weight_mode": "exp",
+    "beta": 4.0
+  },
+  "huggingface": {
+    "sft_model": "dhruvmsheth/vla-foundry-spatula-drying-rack-sft12k-ckpt3",
+    "recap_model": "dhruvmsheth/vla-foundry-spatula-drying-rack-recap-lr2e7-500",
+    "value_model": "dhruvmsheth/vla-foundry-spatula-drying-rack-qwen-value-lora",
+    "artifacts_dataset": "dhruvmsheth/vla-foundry-recap-spatula-drying-rack-artifacts"
+  },
+  "wandb": {
+    "entity": "dsheth_caltech",
+    "project": "vla_foundry_recap",
+    "export_run": "recap_spatula_drying_rack_export_20260428"
+  }
+}
