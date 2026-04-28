@@ -65,6 +65,7 @@ Large files are stored on Hugging Face, not Git.
 | RECAP policy checkpoint | `https://huggingface.co/dhruvmsheth/vla-foundry-spatula-drying-rack-recap-lr2e7-500` |
 | Qwen LoRA value model | `https://huggingface.co/dhruvmsheth/vla-foundry-spatula-drying-rack-qwen-value-lora` |
 | Results, value targets, scores, rollout videos | `https://huggingface.co/datasets/dhruvmsheth/vla-foundry-recap-spatula-drying-rack-artifacts` |
+| Matched SFT/RECAP eval recordings | `https://huggingface.co/datasets/dhruvmsheth/vla-foundry-recap-spatula-drying-rack-artifacts/tree/main/eval_recordings` |
 | Public project bucket | `https://huggingface.co/buckets/dhruvmsheth/pi06star_recap` |
 
 Download the exported model/checkpoint artifacts with:
@@ -105,6 +106,13 @@ Saved value-function rollout visualizations:
 - HF folder: `https://huggingface.co/datasets/dhruvmsheth/vla-foundry-recap-spatula-drying-rack-artifacts/tree/main/value_visualizations`
 - HTML index: `https://huggingface.co/datasets/dhruvmsheth/vla-foundry-recap-spatula-drying-rack-artifacts/blob/main/value_visualizations/index.html`
 - Included videos: 3 success trajectories and 2 failure trajectories with predicted value traces.
+
+Saved matched eval recordings:
+
+- HF folder: `https://huggingface.co/datasets/dhruvmsheth/vla-foundry-recap-spatula-drying-rack-artifacts/tree/main/eval_recordings`
+- Manifest: `https://huggingface.co/datasets/dhruvmsheth/vla-foundry-recap-spatula-drying-rack-artifacts/blob/main/eval_recordings/manifest.json`
+- Included recordings: scenario IDs `100-109` for both SFT12k checkpoint 3 and RECAP lr `2e-7` / 500-step policy.
+- Each `recording.html` is a self-contained MeshCat recording, roughly 160 MB. If HF browser preview is slow, download the HTML and open it locally.
 
 ## Minimal RunPod Setup
 

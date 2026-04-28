@@ -149,6 +149,13 @@ Saved value-function visualizations:
 - HTML index: `https://huggingface.co/datasets/dhruvmsheth/vla-foundry-recap-spatula-drying-rack-artifacts/blob/main/value_visualizations/index.html`
 - Included files: 5 rollout plots and 5 MP4s, with 3 success and 2 failure trajectories.
 
+Saved matched eval recordings:
+
+- HF folder: `https://huggingface.co/datasets/dhruvmsheth/vla-foundry-recap-spatula-drying-rack-artifacts/tree/main/eval_recordings`
+- Manifest: `https://huggingface.co/datasets/dhruvmsheth/vla-foundry-recap-spatula-drying-rack-artifacts/blob/main/eval_recordings/manifest.json`
+- Included files: self-contained MeshCat `recording.html` files plus `policy_metadata.json` and `keyframes.txt` for scenario IDs `100-109` under both `sft12k_100_109` and `recap_lr2e7_500_100_109`.
+- These HTML recordings are roughly 160 MB each, so downloading and opening locally is more reliable than relying on browser preview.
+
 Download all exported artifacts:
 
 ```bash

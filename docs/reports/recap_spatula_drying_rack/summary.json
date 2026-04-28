@@ -110,7 +110,9 @@
     "artifacts_dataset": "dhruvmsheth/vla-foundry-recap-spatula-drying-rack-artifacts",
     "public_bucket": "https://huggingface.co/buckets/dhruvmsheth/pi06star_recap",
     "value_visualizations": "https://huggingface.co/datasets/dhruvmsheth/vla-foundry-recap-spatula-drying-rack-artifacts/tree/main/value_visualizations",
-    "value_visualization_index": "https://huggingface.co/datasets/dhruvmsheth/vla-foundry-recap-spatula-drying-rack-artifacts/blob/main/value_visualizations/index.html"
+    "value_visualization_index": "https://huggingface.co/datasets/dhruvmsheth/vla-foundry-recap-spatula-drying-rack-artifacts/blob/main/value_visualizations/index.html",
+    "eval_recordings": "https://huggingface.co/datasets/dhruvmsheth/vla-foundry-recap-spatula-drying-rack-artifacts/tree/main/eval_recordings",
+    "eval_recordings_manifest": "https://huggingface.co/datasets/dhruvmsheth/vla-foundry-recap-spatula-drying-rack-artifacts/blob/main/eval_recordings/manifest.json"
   },
   "wandb": {
     "entity": "dsheth_caltech",
