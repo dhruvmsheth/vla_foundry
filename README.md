@@ -35,6 +35,17 @@ Value-model validation curves:
 
 ![W&B value validation curves](docs/reports/recap_spatula_drying_rack/assets/wandb_value_validation_curves.png)
 
+Example value-function rollouts:
+
+These plots show selected camera-frame snapshots from rollout trajectories, with
+the labeled normalized return and the Qwen LoRA value prediction over time.
+
+![Value rollout success scenario 150](docs/reports/recap_spatula_drying_rack/assets/scenario_150_success_b15e92f0.png)
+
+![Value rollout success scenario 151](docs/reports/recap_spatula_drying_rack/assets/scenario_151_success_cf273937.png)
+
+![Value rollout failure scenario 152](docs/reports/recap_spatula_drying_rack/assets/scenario_152_failure_0e22066a.png)
+
 ## What Was Built
 
 RECAP utilities live in [`vla_foundry/recap`](vla_foundry/recap):

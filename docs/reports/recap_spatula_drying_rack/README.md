@@ -82,6 +82,29 @@ Qwen LoRA value-model run, and RECAP policy-update run.
 
 ![W&B value validation curves](assets/wandb_value_validation_curves.png)
 
+## Value Rollout Visualizations
+
+The value model was also rendered over five held-out rollout trajectories. Each
+plot shows sampled camera frames over time, the labeled normalized return, and
+the reconstructed value prediction from the Qwen LoRA value head.
+
+Success examples:
+
+![Value rollout success scenario 150](assets/scenario_150_success_b15e92f0.png)
+
+![Value rollout success scenario 151](assets/scenario_151_success_cf273937.png)
+
+![Value rollout success scenario 153](assets/scenario_153_success_28fa9688.png)
+
+Failure examples:
+
+![Value rollout failure scenario 152](assets/scenario_152_failure_0e22066a.png)
+
+![Value rollout failure scenario 154](assets/scenario_154_failure_316a8df2.png)
+
+The matching MP4 renderings are hosted in the HF dataset under
+`value_visualizations/`.
+
 Run links:
 
 | Run | W&B URL |
