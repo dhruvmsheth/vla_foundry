@@ -27,6 +27,14 @@ This is a small smoke result, not a statistically stable benchmark. It is useful
 because it proves the whole loop works: rollout collection, value labeling, value
 model training, advantage scoring, RECAP policy update, and matched re-eval.
 
+Training and validation curves from W&B:
+
+![W&B training curves](docs/reports/recap_spatula_drying_rack/assets/wandb_training_curves.png)
+
+Value-model validation curves:
+
+![W&B value validation curves](docs/reports/recap_spatula_drying_rack/assets/wandb_value_validation_curves.png)
+
 ## What Was Built
 
 RECAP utilities live in [`vla_foundry/recap`](vla_foundry/recap):
@@ -51,22 +59,52 @@ Evaluation helpers live in [`examples/evaluation`](examples/evaluation):
 
 Large files are stored on Hugging Face, not Git.
 
-| Artifact | Hugging Face repo |
+| Artifact | Location |
 |---|---|
-| SFT policy checkpoint | `dhruvmsheth/vla-foundry-spatula-drying-rack-sft12k-ckpt3` |
-| RECAP policy checkpoint | `dhruvmsheth/vla-foundry-spatula-drying-rack-recap-lr2e7-500` |
-| Qwen LoRA value model | `dhruvmsheth/vla-foundry-spatula-drying-rack-qwen-value-lora` |
-| Results, value targets, scores, rollout videos | `dhruvmsheth/vla-foundry-recap-spatula-drying-rack-artifacts` |
+| SFT policy checkpoint | `https://huggingface.co/dhruvmsheth/vla-foundry-spatula-drying-rack-sft12k-ckpt3` |
+| RECAP policy checkpoint | `https://huggingface.co/dhruvmsheth/vla-foundry-spatula-drying-rack-recap-lr2e7-500` |
+| Qwen LoRA value model | `https://huggingface.co/dhruvmsheth/vla-foundry-spatula-drying-rack-qwen-value-lora` |
+| Results, value targets, scores, rollout videos | `https://huggingface.co/datasets/dhruvmsheth/vla-foundry-recap-spatula-drying-rack-artifacts` |
+| Public project bucket | `https://huggingface.co/buckets/dhruvmsheth/pi06star_recap` |
+
+Download the exported model/checkpoint artifacts with:
+
+```bash
+hf download dhruvmsheth/vla-foundry-spatula-drying-rack-sft12k-ckpt3 \
+  --local-dir /workspace/vla_recap/hf_exports/sft12k_ckpt3
+
+hf download dhruvmsheth/vla-foundry-spatula-drying-rack-recap-lr2e7-500 \
+  --local-dir /workspace/vla_recap/hf_exports/recap_lr2e7_500
+
+hf download dhruvmsheth/vla-foundry-spatula-drying-rack-qwen-value-lora \
+  --local-dir /workspace/vla_recap/hf_exports/qwen_value_lora
+
+hf download dhruvmsheth/vla-foundry-recap-spatula-drying-rack-artifacts \
+  --repo-type dataset \
+  --local-dir /workspace/vla_recap/hf_exports/recap_artifacts
+```
 
 W&B:
 
 - entity: `dsheth_caltech`
 - project: `vla_foundry_recap`
+- SFT policy run: `https://wandb.ai/dsheth_caltech/vla_foundry_recap/runs/xbwvtv3x`
+- Qwen value-model run: `https://wandb.ai/dsheth_caltech/vla_foundry_recap/runs/5a69hryp`
+- RECAP policy update run: `https://wandb.ai/dsheth_caltech/vla_foundry_recap/runs/kwlsr6ux`
+- export/artifact run: `https://wandb.ai/dsheth_caltech/vla_foundry_recap/runs/erf3i1n3`
+- README curve update run: `https://wandb.ai/dsheth_caltech/vla_foundry_recap/runs/t3ckse32`
 
 Detailed report:
 
 - [`docs/reports/recap_spatula_drying_rack/README.md`](docs/reports/recap_spatula_drying_rack/README.md)
 - [`docs/reports/recap_spatula_drying_rack/summary.json`](docs/reports/recap_spatula_drying_rack/summary.json)
+- [`docs/reports/recap_spatula_drying_rack/wandb_runs.json`](docs/reports/recap_spatula_drying_rack/wandb_runs.json)
+
+Saved value-function rollout visualizations:
+
+- HF folder: `https://huggingface.co/datasets/dhruvmsheth/vla-foundry-recap-spatula-drying-rack-artifacts/tree/main/value_visualizations`
+- HTML index: `https://huggingface.co/datasets/dhruvmsheth/vla-foundry-recap-spatula-drying-rack-artifacts/blob/main/value_visualizations/index.html`
+- Included videos: 3 success trajectories and 2 failure trajectories with predicted value traces.
 
 ## Minimal RunPod Setup
 

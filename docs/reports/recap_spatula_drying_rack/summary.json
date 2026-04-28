@@ -1,6 +1,17 @@
 {
   "task": "BimanualPutSpatulaOnPlateFromDryingRack",
-  "matched_eval_scenario_ids": [100, 101, 102, 103, 104, 105, 106, 107, 108, 109],
+  "matched_eval_scenario_ids": [
+    100,
+    101,
+    102,
+    103,
+    104,
+    105,
+    106,
+    107,
+    108,
+    109
+  ],
   "sft12k_ckpt3": {
     "successes": 5,
     "total": 10,
@@ -12,16 +23,56 @@
     "success_rate": 0.6
   },
   "per_scenario": [
-    {"scenario_index": 100, "sft12k": true, "recap": true},
-    {"scenario_index": 101, "sft12k": false, "recap": false},
-    {"scenario_index": 102, "sft12k": true, "recap": false},
-    {"scenario_index": 103, "sft12k": true, "recap": true},
-    {"scenario_index": 104, "sft12k": true, "recap": true},
-    {"scenario_index": 105, "sft12k": false, "recap": true},
-    {"scenario_index": 106, "sft12k": false, "recap": false},
-    {"scenario_index": 107, "sft12k": false, "recap": true},
-    {"scenario_index": 108, "sft12k": false, "recap": true},
-    {"scenario_index": 109, "sft12k": true, "recap": false}
+    {
+      "scenario_index": 100,
+      "sft12k": true,
+      "recap": true
+    },
+    {
+      "scenario_index": 101,
+      "sft12k": false,
+      "recap": false
+    },
+    {
+      "scenario_index": 102,
+      "sft12k": true,
+      "recap": false
+    },
+    {
+      "scenario_index": 103,
+      "sft12k": true,
+      "recap": true
+    },
+    {
+      "scenario_index": 104,
+      "sft12k": true,
+      "recap": true
+    },
+    {
+      "scenario_index": 105,
+      "sft12k": false,
+      "recap": true
+    },
+    {
+      "scenario_index": 106,
+      "sft12k": false,
+      "recap": false
+    },
+    {
+      "scenario_index": 107,
+      "sft12k": false,
+      "recap": true
+    },
+    {
+      "scenario_index": 108,
+      "sft12k": false,
+      "recap": true
+    },
+    {
+      "scenario_index": 109,
+      "sft12k": true,
+      "recap": false
+    }
   ],
   "value_targets": {
     "episodes": 200,
@@ -56,11 +107,18 @@
     "sft_model": "dhruvmsheth/vla-foundry-spatula-drying-rack-sft12k-ckpt3",
     "recap_model": "dhruvmsheth/vla-foundry-spatula-drying-rack-recap-lr2e7-500",
     "value_model": "dhruvmsheth/vla-foundry-spatula-drying-rack-qwen-value-lora",
-    "artifacts_dataset": "dhruvmsheth/vla-foundry-recap-spatula-drying-rack-artifacts"
+    "artifacts_dataset": "dhruvmsheth/vla-foundry-recap-spatula-drying-rack-artifacts",
+    "public_bucket": "https://huggingface.co/buckets/dhruvmsheth/pi06star_recap",
+    "value_visualizations": "https://huggingface.co/datasets/dhruvmsheth/vla-foundry-recap-spatula-drying-rack-artifacts/tree/main/value_visualizations",
+    "value_visualization_index": "https://huggingface.co/datasets/dhruvmsheth/vla-foundry-recap-spatula-drying-rack-artifacts/blob/main/value_visualizations/index.html"
   },
   "wandb": {
     "entity": "dsheth_caltech",
     "project": "vla_foundry_recap",
-    "export_run": "recap_spatula_drying_rack_export_20260428"
+    "sft_policy_run": "https://wandb.ai/dsheth_caltech/vla_foundry_recap/runs/xbwvtv3x",
+    "qwen_value_model_run": "https://wandb.ai/dsheth_caltech/vla_foundry_recap/runs/5a69hryp",
+    "recap_policy_update_run": "https://wandb.ai/dsheth_caltech/vla_foundry_recap/runs/kwlsr6ux",
+    "export_run": "https://wandb.ai/dsheth_caltech/vla_foundry_recap/runs/erf3i1n3",
+    "readme_curve_update_run": "https://wandb.ai/dsheth_caltech/vla_foundry_recap/runs/t3ckse32"
   }
 }

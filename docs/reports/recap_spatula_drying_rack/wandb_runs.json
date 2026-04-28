@@ -1,0 +1,37 @@
+{
+  "sft": {
+    "id": "xbwvtv3x",
+    "name": "2026_04_27-00_45_46-model_diffusion_policy-lr_2e-05-bsz_2",
+    "state": "crashed",
+    "url": "https://wandb.ai/dsheth_caltech/vla_foundry_recap/runs/xbwvtv3x",
+    "history_rows": 195
+  },
+  "value": {
+    "id": "5a69hryp",
+    "name": "recap_qwen_lora_value_sft_12k_lr2e5_ckpt3_150_350_20260427_111509_cfail500_bins50_mse10_v1",
+    "state": "crashed",
+    "url": "https://wandb.ai/dsheth_caltech/vla_foundry_recap/runs/5a69hryp",
+    "history_rows": 138
+  },
+  "recap": {
+    "id": "kwlsr6ux",
+    "name": "recap_policy_sft12k_ckpt3_qwen_value_epoch2_posadv_lr2e7_20260427_204913",
+    "state": "finished",
+    "url": "https://wandb.ai/dsheth_caltech/vla_foundry_recap/runs/kwlsr6ux",
+    "history_rows": 51
+  },
+  "export": {
+    "id": "erf3i1n3",
+    "name": "recap_spatula_drying_rack_export_20260428",
+    "state": "finished",
+    "url": "https://wandb.ai/dsheth_caltech/vla_foundry_recap/runs/erf3i1n3",
+    "history_rows": 1
+  },
+  "readme_curve_update": {
+    "id": "t3ckse32",
+    "name": "recap_readme_curve_update_20260428",
+    "state": "finished",
+    "url": "https://wandb.ai/dsheth_caltech/vla_foundry_recap/runs/t3ckse32",
+    "history_rows": 1
+  }
+}

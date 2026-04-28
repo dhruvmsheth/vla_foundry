@@ -73,6 +73,32 @@ Qwen LoRA value model validation:
 The value model is not a polished critic yet, but it separates successful and
 failed rollouts enough to generate a usable first set of RECAP weights.
 
+## W&B Curves
+
+The static plots below were generated from the W&B histories for the SFT run,
+Qwen LoRA value-model run, and RECAP policy-update run.
+
+![W&B training curves](assets/wandb_training_curves.png)
+
+![W&B value validation curves](assets/wandb_value_validation_curves.png)
+
+Run links:
+
+| Run | W&B URL |
+|---|---|
+| SFT policy, 12k samples | `https://wandb.ai/dsheth_caltech/vla_foundry_recap/runs/xbwvtv3x` |
+| Qwen LoRA value model | `https://wandb.ai/dsheth_caltech/vla_foundry_recap/runs/5a69hryp` |
+| RECAP policy update | `https://wandb.ai/dsheth_caltech/vla_foundry_recap/runs/kwlsr6ux` |
+| Export/artifact sync | `https://wandb.ai/dsheth_caltech/vla_foundry_recap/runs/erf3i1n3` |
+| README curve update | `https://wandb.ai/dsheth_caltech/vla_foundry_recap/runs/t3ckse32` |
+
+The W&B run metadata used for these plots is stored in
+[`wandb_runs.json`](wandb_runs.json).
+
+Note: the SFT and value-model W&B runs are marked `crashed` because the runtime
+was interrupted after the needed checkpoints and metrics had been written. The
+exported Hugging Face artifacts are the source of truth for reproduction.
+
 ## RECAP Scoring
 
 Scored examples: 42,299
@@ -105,13 +131,44 @@ artifacts are stored on Hugging Face.
 
 Hugging Face model repos:
 
-- `dhruvmsheth/vla-foundry-spatula-drying-rack-sft12k-ckpt3`
-- `dhruvmsheth/vla-foundry-spatula-drying-rack-recap-lr2e7-500`
-- `dhruvmsheth/vla-foundry-spatula-drying-rack-qwen-value-lora`
+- `https://huggingface.co/dhruvmsheth/vla-foundry-spatula-drying-rack-sft12k-ckpt3`
+- `https://huggingface.co/dhruvmsheth/vla-foundry-spatula-drying-rack-recap-lr2e7-500`
+- `https://huggingface.co/dhruvmsheth/vla-foundry-spatula-drying-rack-qwen-value-lora`
 
 Hugging Face dataset repo:
 
-- `dhruvmsheth/vla-foundry-recap-spatula-drying-rack-artifacts`
+- `https://huggingface.co/datasets/dhruvmsheth/vla-foundry-recap-spatula-drying-rack-artifacts`
+
+Public Hugging Face bucket:
+
+- `https://huggingface.co/buckets/dhruvmsheth/pi06star_recap`
+
+Saved value-function visualizations:
+
+- HF folder: `https://huggingface.co/datasets/dhruvmsheth/vla-foundry-recap-spatula-drying-rack-artifacts/tree/main/value_visualizations`
+- HTML index: `https://huggingface.co/datasets/dhruvmsheth/vla-foundry-recap-spatula-drying-rack-artifacts/blob/main/value_visualizations/index.html`
+- Included files: 5 rollout plots and 5 MP4s, with 3 success and 2 failure trajectories.
+
+Download all exported artifacts:
+
+```bash
+hf download dhruvmsheth/vla-foundry-recap-spatula-drying-rack-artifacts \
+  --repo-type dataset \
+  --local-dir /workspace/vla_recap/hf_exports/recap_artifacts
+```
+
+Download only the model repos:
+
+```bash
+hf download dhruvmsheth/vla-foundry-spatula-drying-rack-sft12k-ckpt3 \
+  --local-dir /workspace/vla_recap/hf_exports/sft12k_ckpt3
+
+hf download dhruvmsheth/vla-foundry-spatula-drying-rack-recap-lr2e7-500 \
+  --local-dir /workspace/vla_recap/hf_exports/recap_lr2e7_500
+
+hf download dhruvmsheth/vla-foundry-spatula-drying-rack-qwen-value-lora \
+  --local-dir /workspace/vla_recap/hf_exports/qwen_value_lora
+```
 
 W&B project:
 
