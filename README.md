@@ -70,19 +70,43 @@ Detailed report:
 
 ## Minimal RunPod Setup
 
-Use the LBM Eval image:
+Create a GPU Pod from a custom template. Docker-in-Docker and privileged mode are
+not needed for this workflow.
 
-```text
-toyotaresearch/lbm-eval-oss:vla-foundry
-```
+Template settings:
 
-Container start command:
+| Setting | Value |
+|---|---|
+| Template type | GPU Pod |
+| Container image | `toyotaresearch/lbm-eval-oss:vla-foundry` |
+| Container start command | `/bin/bash -lc "sleep infinity"` |
+| Container disk | `100-120 GB` recommended |
+| Persistent storage | Network volume mounted at `/workspace` |
+| Network volume size | `500 GB` minimum, `1 TB` comfortable |
+| SSH terminal access | Enabled |
+| Jupyter notebook | Optional, not required |
+| HTTP service | Optional, only needed for browser-viewing local HTML artifacts |
+
+Connect with the SSH command RunPod gives you:
 
 ```bash
-/bin/bash -lc "sleep infinity"
+ssh <pod-id>-<proxy-id>@ssh.runpod.io -i ~/.ssh/id_ed25519
 ```
 
-Environment:
+Set up the repo on the persistent `/workspace` volume:
+
+```bash
+mkdir -p /workspace/vla_recap/src /workspace/vla_recap/{data,outputs,hf,cache,tmp}
+cd /workspace/vla_recap/src
+
+git clone -b recap-posttraining-v0 https://github.com/dhruvmsheth/vla_foundry.git
+cd vla_foundry
+
+uv sync --group inference --group preprocessing
+uv pip install -e .
+```
+
+Then set the runtime environment:
 
 ```bash
 export PROJECT_ROOT=/workspace/vla_recap
@@ -103,6 +127,10 @@ Login:
 hf auth login
 wandb login
 ```
+
+If you are only re-running evals from the exported Hugging Face checkpoints, the
+original RunPod network volume is not required. The eval helper downloads model
+metadata from the HF model repo and writes fresh outputs under `/workspace`.
 
 ## Reproduce the Smoke Eval
 

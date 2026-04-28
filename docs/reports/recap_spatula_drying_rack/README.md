@@ -125,6 +125,35 @@ The commands below assume the RunPod/LBM image setup used during the experiment:
 `toyotaresearch/lbm-eval-oss:vla-foundry`, with the repo cloned to
 `/workspace/vla_recap/src/vla_foundry`.
 
+### RunPod Template
+
+Use a custom GPU Pod template. Docker privileges are not required.
+
+| Setting | Value |
+|---|---|
+| Template type | GPU Pod |
+| Container image | `toyotaresearch/lbm-eval-oss:vla-foundry` |
+| Container start command | `/bin/bash -lc "sleep infinity"` |
+| Container disk | `100-120 GB` recommended |
+| Persistent storage | Network volume mounted at `/workspace` |
+| Network volume size | `500 GB` minimum, `1 TB` comfortable |
+| SSH terminal access | Enabled |
+| Jupyter notebook | Optional |
+| HTTP service | Optional, only needed for browser-viewing HTML artifacts |
+
+Initial pod setup:
+
+```bash
+mkdir -p /workspace/vla_recap/src /workspace/vla_recap/{data,outputs,hf,cache,tmp}
+cd /workspace/vla_recap/src
+
+git clone -b recap-posttraining-v0 https://github.com/dhruvmsheth/vla_foundry.git
+cd vla_foundry
+
+uv sync --group inference --group preprocessing
+uv pip install -e .
+```
+
 Set the environment:
 
 ```bash
